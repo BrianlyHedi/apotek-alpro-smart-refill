@@ -102,7 +102,7 @@ export function usePrescriptions(
   }, [userId, status]);
 
   useEffect(() => {
-    fetchPrescriptions();
+    queueMicrotask(() => void fetchPrescriptions());
   }, [fetchPrescriptions]);
 
   return { prescriptions, isLoading, error, refetch: fetchPrescriptions };

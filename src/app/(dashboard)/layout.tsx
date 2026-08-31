@@ -1,28 +1,14 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Navbar } from "@/components/layout/navbar";
-import { prisma } from "@/lib/prisma/client";
+import { getCurrentUserProfile } from "@/lib/auth/get-user";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  // Fetch full profile untuk pass ke komponen layout
-  const profile = await prisma.user.findUnique({
-    where: { id: user.id },
-  });
+  const profile = await getCurrentUserProfile();
 
   if (!profile) {
     redirect("/login");

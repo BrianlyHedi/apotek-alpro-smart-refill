@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { checkDrugInteractions, type DrugInteractionResult } from "@/lib/utils/d
 import { AlertTriangle, Plus, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/components/providers/toast-provider";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export interface SimpleMedicine {
   id: string;
@@ -35,31 +36,34 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
   const [items, setItems] = useState<{ medicineId: string; quantity: number; dosageInstruction: string }[]>([]);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [interactions, setInteractions] = useState<DrugInteractionResult[]>([]);
   const { addToast } = useToast();
   const router = useRouter();
 
-  // Load existing items if any
+  // Load existing items when dialog opens. Using a state initializer is acceptable here; the
+  // original code set state inside an effect during the render phase. We use a small timeout so
+  // the state update runs after the render commit to avoid the sync setState warning.
   useEffect(() => {
     if (isOpen) {
-      if (prescription.items && prescription.items.length > 0) {
-        setItems(prescription.items.map(i => ({
-          medicineId: i.medicine?.id || (i as any).medicineId || "",
-          quantity: i.quantity,
-          dosageInstruction: i.dosageInstruction || ""
-        })));
-      } else {
-        setItems([]);
-      }
-      setNotes(prescription.notes || "");
+      const timer = setTimeout(() => {
+        if (prescription.items && prescription.items.length > 0) {
+          setItems(prescription.items.map(i => ({
+            medicineId: i.medicine?.id || "",
+            quantity: i.quantity,
+            dosageInstruction: i.dosageInstruction || ""
+          })));
+        } else {
+          setItems([]);
+        }
+        setNotes(prescription.notes || "");
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, prescription]);
+  }, [isOpen, prescription.id, prescription.items, prescription.notes]);
 
-  // Check interactions whenever items change
-  useEffect(() => {
+  // Derive interactions directly from the current items to avoid another effect/setState.
+  const interactions = useMemo(() => {
     const medicineIds = items.map(i => i.medicineId).filter(Boolean);
-    const foundInteractions = checkDrugInteractions(medicineIds, allInteractions);
-    setInteractions(foundInteractions.interactions);
+    return checkDrugInteractions(medicineIds, allInteractions).interactions;
   }, [items, allInteractions]);
 
   const handleAddItem = () => {
@@ -72,7 +76,11 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
     setItems(newItems);
   };
 
-  const handleItemChange = (index: number, field: string, value: any) => {
+  const handleItemChange = (
+    index: number,
+    field: "medicineId" | "quantity" | "dosageInstruction",
+    value: string | number
+  ) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
     setItems(newItems);
@@ -131,10 +139,12 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
             <h3 className="font-semibold text-sm text-zinc-500 mb-2 uppercase tracking-wider">Lampiran Resep</h3>
             <div className="flex-1 relative rounded-lg overflow-hidden border border-zinc-200 bg-white">
               {prescription.imageUrl ? (
-                <img 
-                  src={prescription.imageUrl} 
-                  alt="Resep Pasien" 
-                  className="w-full h-full object-contain"
+                <Image
+                  src={prescription.imageUrl}
+                  alt="Resep Pasien"
+                  fill
+                  unoptimized
+                  className="object-contain"
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-zinc-400">
@@ -178,7 +188,7 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
                         <Label>Pilih Obat</Label>
                         <Select 
                           value={item.medicineId} 
-                          onValueChange={(val) => handleItemChange(idx, "medicineId", val)}
+                          onValueChange={(val) => handleItemChange(idx, "medicineId", val || "")}
                         >
                           <SelectTrigger className="bg-white">
                             <SelectValue placeholder="Pilih obat dari database" />

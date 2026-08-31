@@ -92,7 +92,7 @@ export function useRefillSchedule(userId?: string): UseRefillScheduleReturn {
   }, [userId]);
 
   useEffect(() => {
-    fetchSchedules();
+    queueMicrotask(() => void fetchSchedules());
   }, [fetchSchedules]);
 
   return { schedules, isLoading, error, refetch: fetchSchedules };

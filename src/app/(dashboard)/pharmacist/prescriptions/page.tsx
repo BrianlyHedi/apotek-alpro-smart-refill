@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/auth/get-user";
 import { prisma } from "@/lib/prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,10 +7,10 @@ import { VerifyPrescriptionModal } from "@/components/pharmacist/verify-prescrip
 import { formatRelativeDay } from "@/lib/utils/format-date";
 import { FileText, Clock, FileCheck } from "lucide-react";
 import { PrescriptionWithItems } from "@/types/prescription";
+import Image from "next/image";
 
 export default async function PharmacistPrescriptionsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) return null;
 
@@ -39,8 +39,14 @@ export default async function PharmacistPrescriptionsPage() {
       }))
     ) as unknown as Promise<(PrescriptionWithItems & { patient: { name: string, email: string } })[]>,
     
-    // Ambil semua obat untuk dropdown
+    // Ambil semua obat untuk dropdown (pilih field yang dibutuhkan saja)
     prisma.medicine.findMany({
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        price: true,
+      },
       orderBy: { name: "asc" }
     }).then((list) =>
       list.map((m) => ({
@@ -51,7 +57,14 @@ export default async function PharmacistPrescriptionsPage() {
 
     // Ambil semua interaksi untuk dicek
     prisma.drugInteraction.findMany({
-      include: { medicineA: true, medicineB: true }
+      select: {
+        medicineAId: true,
+        medicineBId: true,
+        severity: true,
+        description: true,
+        medicineA: { select: { name: true } },
+        medicineB: { select: { name: true } },
+      }
     }).then((list) =>
       list.map((item) => ({
         medicineAId: item.medicineAId,
@@ -84,10 +97,12 @@ export default async function PharmacistPrescriptionsPage() {
               <CardContent className="p-0 flex flex-col sm:flex-row">
                 <div className="sm:w-48 h-32 sm:h-auto bg-zinc-100 shrink-0 relative overflow-hidden border-r">
                   {prescription.imageUrl ? (
-                    <img 
-                      src={prescription.imageUrl} 
-                      alt="Resep" 
-                      className="w-full h-full object-cover"
+                    <Image
+                      src={prescription.imageUrl}
+                      alt="Resep"
+                      fill
+                      unoptimized
+                      className="object-cover"
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full text-zinc-400">
@@ -108,18 +123,18 @@ export default async function PharmacistPrescriptionsPage() {
                     </div>
                     {prescription.notes && (
                       <p className="text-sm text-zinc-600 line-clamp-2 mt-2">
-                        "{prescription.notes}"
+                        &ldquo;{prescription.notes}&rdquo;
                       </p>
                     )}
                   </div>
-                  
+
                   <div className="flex items-center justify-between mt-4 pt-4 border-t">
                     <div className="flex items-center text-sm text-zinc-500">
                       <Clock className="mr-1 h-4 w-4" />
                       {formatRelativeDay(prescription.createdAt.toISOString())}
                     </div>
-                    <VerifyPrescriptionModal 
-                      prescription={prescription} 
+                    <VerifyPrescriptionModal
+                      prescription={prescription}
                       allMedicines={allMedicines}
                       allInteractions={allInteractions}
                     >

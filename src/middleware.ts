@@ -52,17 +52,19 @@ export async function middleware(request: NextRequest) {
   if (PUBLIC_ROUTES.includes(pathname)) {
     // Jika sudah login, redirect ke dashboard sesuai role
     if (user) {
-      console.log("[Middleware] User logged in:", user.email);
-      const { data: profile, error } = await supabase
-        .from("users")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      console.log("[Middleware] Profile fetch result:", { profile, error });
-      if (profile?.role) {
-        const dashboard = ROLE_DASHBOARD[profile.role] ?? "/patient";
-        return NextResponse.redirect(new URL(dashboard, request.url));
-      }
+      const userRole =
+        (user.user_metadata?.role as string) ||
+        (
+          await supabase
+            .from("users")
+            .select("role")
+            .eq("id", user.id)
+            .single()
+        ).data?.role ||
+        "PATIENT";
+
+      const dashboard = ROLE_DASHBOARD[userRole] ?? "/patient";
+      return NextResponse.redirect(new URL(dashboard, request.url));
     }
     return response;
   }
@@ -74,14 +76,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Fetch role dari tabel users
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  // API routes diizinkan untuk semua authenticated user
+  if (pathname.startsWith("/api")) {
+    return response;
+  }
 
-  const role = profile?.role ?? "PATIENT";
+  // Ambil role dari user_metadata (cepat) atau fallback ke tabel users
+  let role = (user.user_metadata?.role as string) || "";
+  if (!role) {
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    role = profile?.role ?? "PATIENT";
+  }
+
   const allowedRoutes = ROLE_ALLOWED_ROUTES[role] ?? ["/patient"];
 
   // Cek apakah route diizinkan untuk role ini

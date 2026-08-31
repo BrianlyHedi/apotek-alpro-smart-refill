@@ -3,17 +3,48 @@
 import { usePrescriptions } from "@/hooks/use-prescriptions";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Plus, FileText, Calendar, AlertCircle, Inbox } from "lucide-react";
+import { Plus, FileText, Calendar, AlertCircle, Inbox, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/providers/toast-provider";
 
 export default function PatientPrescriptionsPage() {
   const { user } = useAuth();
   const { prescriptions, isLoading, error } = usePrescriptions({ userId: user?.id });
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadNotes, setUploadNotes] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const router = useRouter();
+  const { addToast } = useToast();
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      if (uploadNotes.trim()) formData.append("notes", uploadNotes.trim());
+      const response = await fetch("/api/prescriptions", { method: "POST", body: formData });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gagal mengunggah resep");
+      setIsUploadOpen(false);
+      setSelectedFile(null);
+      setUploadNotes("");
+      addToast("success", "Resep berhasil diunggah dan menunggu verifikasi.");
+      router.refresh();
+    } catch (uploadError) {
+      addToast("error", uploadError instanceof Error ? uploadError.message : "Gagal mengunggah resep.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -59,8 +90,10 @@ export default function PatientPrescriptionsPage() {
         
         <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
           <DialogTrigger render={<Button className="bg-green-600 hover:bg-green-700" />}>
-            <Plus className="mr-2 h-4 w-4" />
-            Unggah Resep Baru
+            <>
+              <Plus className="mr-2 h-4 w-4" />
+              Unggah Resep Baru
+            </>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -69,14 +102,30 @@ export default function PatientPrescriptionsPage() {
                 Foto resep fisik Anda dengan jelas. Pastikan nama dokter, tanggal, dan daftar obat terbaca.
               </DialogDescription>
             </DialogHeader>
-            <div className="border-2 border-dashed rounded-lg p-12 text-center mt-4">
+            <label className="block cursor-pointer border-2 border-dashed rounded-lg p-8 text-center mt-4 hover:border-green-400 hover:bg-green-50/40">
               <FileText className="mx-auto h-12 w-12 text-zinc-300 mb-4" />
-              <p className="text-sm font-medium text-zinc-900">Klik untuk upload foto</p>
-              <p className="text-xs text-zinc-500 mt-1">atau drag & drop file ke sini (JPG/PNG)</p>
-            </div>
+              <p className="text-sm font-medium text-zinc-900">{selectedFile?.name || "Pilih foto resep"}</p>
+              <p className="text-xs text-zinc-500 mt-1">JPG, PNG, atau WEBP maksimal 5MB</p>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
+              />
+            </label>
+            <Textarea
+              className="mt-4"
+              placeholder="Catatan untuk apoteker (opsional)"
+              value={uploadNotes}
+              onChange={(event) => setUploadNotes(event.target.value)}
+              maxLength={500}
+            />
             <div className="flex justify-end gap-2 mt-6">
               <Button variant="outline" onClick={() => setIsUploadOpen(false)}>Batal</Button>
-              <Button disabled className="bg-green-600">Simpan Resep</Button>
+              <Button disabled={!selectedFile || isUploading} onClick={handleUpload} className="bg-green-600">
+                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isUploading ? "Mengunggah..." : "Simpan Resep"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -109,11 +158,12 @@ export default function PatientPrescriptionsPage() {
                   <FileText className="h-10 w-10 opacity-20" />
                 </div>
                 {prescription.imageUrl && (
-                  <img 
-                    src={prescription.imageUrl} 
-                    alt="Resep" 
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  <Image
+                    src={prescription.imageUrl}
+                    alt="Resep"
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                 )}
               </div>

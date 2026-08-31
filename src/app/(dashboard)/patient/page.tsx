@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
+import { getCurrentUserProfile } from "@/lib/auth/get-user";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pill, Upload, PackageSearch, Clock } from "lucide-react";
@@ -13,35 +13,30 @@ export const metadata: Metadata = {
 };
 
 export default async function PatientDashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const profile = await getCurrentUserProfile();
 
-  if (!user) return null;
+  if (!profile) return null;
 
-  const profile = await prisma.user.findUnique({
-    where: { id: user.id },
-  });
-
-  // Fetch pending prescriptions
-  const activePrescriptions = await prisma.prescription.findMany({
-    where: { 
-      userId: user.id,
-      status: { in: ["PENDING", "VERIFIED"] }
-    },
-    include: { items: true },
-    orderBy: { createdAt: "desc" }
-  });
-
-  // Fetch refill schedules
-  const refillSchedules = await prisma.refillSchedule.findMany({
-    where: { 
-      userId: user.id,
-      isActive: true 
-    },
-    include: { medicine: true },
-    orderBy: { nextRefillDate: "asc" },
-    take: 3
-  });
+  // Fetch pending prescriptions dan refill schedules secara paralel
+  const [activePrescriptions, refillSchedules] = await Promise.all([
+    prisma.prescription.findMany({
+      where: { 
+        userId: profile.id,
+        status: { in: ["PENDING", "VERIFIED"] }
+      },
+      include: { items: true },
+      orderBy: { createdAt: "desc" }
+    }),
+    prisma.refillSchedule.findMany({
+      where: { 
+        userId: profile.id,
+        isActive: true 
+      },
+      include: { medicine: true },
+      orderBy: { nextRefillDate: "asc" },
+      take: 3
+    })
+  ]);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">

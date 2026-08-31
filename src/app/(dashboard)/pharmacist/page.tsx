@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
+import { getCurrentUserProfile } from "@/lib/auth/get-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, AlertTriangle, PackageSearch } from "lucide-react";
@@ -12,15 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function PharmacistDashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return null;
-
-  const profile = await prisma.user.findUnique({
-    where: { id: user.id },
-    include: { pharmacy: true }
-  });
+  const profile = await getCurrentUserProfile();
 
   if (!profile || profile.role !== "PHARMACIST" || !profile.pharmacyId) {
     return (

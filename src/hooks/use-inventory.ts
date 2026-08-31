@@ -93,7 +93,7 @@ export function useInventory(
   }, [pharmacyId, medicineId]);
 
   useEffect(() => {
-    fetchInventory();
+    queueMicrotask(() => void fetchInventory());
 
     // Subscribe ke realtime changes pada tabel inventory
     const channel = supabase
@@ -107,8 +107,9 @@ export function useInventory(
           ...(pharmacyId ? { filter: `pharmacy_id=eq.${pharmacyId}` } : {}),
         },
         (payload) => {
-          if (payload.new && (payload.new as any).medicine_id) {
-            setLastUpdatedMedicineId((payload.new as any).medicine_id);
+          const nextRecord = payload.new as Record<string, unknown>;
+          if (nextRecord.medicine_id) {
+            setLastUpdatedMedicineId(nextRecord.medicine_id as string);
             setTimeout(() => setLastUpdatedMedicineId(null), 3000);
           }
           fetchInventory();

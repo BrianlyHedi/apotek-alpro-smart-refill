@@ -14,6 +14,19 @@ import { supabase } from "@/lib/supabase/client";
 // Kita tidak memakai useInventory hook di sini karena hook itu me-merge stok lintas cabang (untuk view Pasien).
 // Apoteker butuh view raw inventory list khusus untuk cabangnya saja.
 
+interface SupabaseMedicine {
+  name: string;
+  category: string;
+  price: number;
+}
+
+interface SupabaseInventoryItem {
+  id: string;
+  quantity: number;
+  min_stock: number;
+  medicines: SupabaseMedicine;
+}
+
 interface InventoryItem {
   id: string;
   quantity: number;
@@ -28,11 +41,11 @@ interface InventoryItem {
 export default function PharmacistInventoryPage() {
   const { user } = useAuth();
   const { addToast } = useToast();
-  
+
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // State untuk melacak perubahan yang belum disave
   const [edits, setEdits] = useState<Record<string, number>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -59,11 +72,11 @@ export default function PharmacistInventoryPage() {
             medicines (name, category, price)
           `)
           .eq("pharmacy_id", profile.pharmacy_id)
-          .order("medicines(name)", { ascending: true });
+          .order("medicines(name)", { ascending: true }) as { data: SupabaseInventoryItem[] | null; error: unknown };
 
-        if (error) throw error;
+        if (error) throw error as Error;
 
-        const mapped: InventoryItem[] = (invData || []).map((item: any) => ({
+        const mapped: InventoryItem[] = (invData || []).map((item) => ({
           id: item.id,
           quantity: item.quantity,
           minStock: item.min_stock,

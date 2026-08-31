@@ -5,7 +5,6 @@
 
 import { PrismaClient } from "../src/generated/prisma";
 import { createClient } from "@supabase/supabase-js";
-import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -582,9 +581,6 @@ async function main() {
         userId = authUser.user.id;
       }
     }
-
-    // Hash password sebagai fallback (kalau Supabase Auth tidak tersedia)
-    const passwordHash = await bcrypt.hash(userData.password, 10);
 
     // Tentukan pharmacy assignment untuk staff
     const pharmacyId =
