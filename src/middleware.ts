@@ -22,7 +22,27 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   let response = NextResponse.next({ request });
 
-  // Buat Supabase client untuk middleware (cookie-based session)
+  // Cek apakah ada cookie session Supabase
+  const allCookies = request.cookies.getAll();
+  const hasAuthCookie = allCookies.some(
+    (c) => c.name.startsWith("sb-") && c.name.includes("-auth-token")
+  );
+
+  // Optimasi 0ms untuk user yang belum login (tanpa cookie auth)
+  if (!hasAuthCookie) {
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    if (PUBLIC_ROUTES.includes(pathname)) {
+      return response;
+    }
+    // Protected route tapi tanpa cookie -> langsung redirect ke login
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Buat Supabase client untuk memverifikasi session
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -48,9 +68,8 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Public routes — bisa diakses siapa saja
+  // Public routes — jika sudah login, redirect ke dashboard role
   if (PUBLIC_ROUTES.includes(pathname)) {
-    // Jika sudah login, redirect ke dashboard sesuai role
     if (user) {
       const userRole =
         (user.user_metadata?.role as string) ||
@@ -69,7 +88,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Protected routes — harus login
+  // Protected routes — jika token invalid / expired
   if (!user) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);

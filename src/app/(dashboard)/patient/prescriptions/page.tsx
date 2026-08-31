@@ -16,7 +16,7 @@ import { useToast } from "@/components/providers/toast-provider";
 
 export default function PatientPrescriptionsPage() {
   const { user } = useAuth();
-  const { prescriptions, isLoading, error } = usePrescriptions({ userId: user?.id });
+  const { prescriptions, isLoading, error, refetch } = usePrescriptions({ userId: user?.id });
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadNotes, setUploadNotes] = useState("");
@@ -38,6 +38,7 @@ export default function PatientPrescriptionsPage() {
       setSelectedFile(null);
       setUploadNotes("");
       addToast("success", "Resep berhasil diunggah dan menunggu verifikasi.");
+      await refetch();
       router.refresh();
     } catch (uploadError) {
       addToast("error", uploadError instanceof Error ? uploadError.message : "Gagal mengunggah resep.");

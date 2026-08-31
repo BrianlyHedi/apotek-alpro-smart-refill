@@ -125,7 +125,7 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger render={children} />
-      <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="p-6 pb-2 shrink-0">
           <DialogTitle>Verifikasi Resep</DialogTitle>
           <DialogDescription>
@@ -174,34 +174,38 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
                   Belum ada obat yang ditambahkan.
                 </div>
               ) : (
-                items.map((item, idx) => (
-                  <div key={idx} className="p-4 border rounded-lg bg-zinc-50 relative group">
-                    <button 
-                      onClick={() => handleRemoveItem(idx)}
-                      className="absolute top-2 right-2 p-1 text-zinc-400 hover:text-red-600 rounded-md"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                    
-                    <div className="grid gap-4">
-                      <div className="grid gap-2">
-                        <Label>Pilih Obat</Label>
-                        <Select 
-                          value={item.medicineId} 
-                          onValueChange={(val) => handleItemChange(idx, "medicineId", val || "")}
-                        >
-                          <SelectTrigger className="bg-white">
-                            <SelectValue placeholder="Pilih obat dari database" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {allMedicines.map(med => (
-                              <SelectItem key={med.id} value={med.id}>
-                                {med.name} ({med.category})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                items.map((item, idx) => {
+                  const selectedMed = allMedicines.find(m => m.id === item.medicineId);
+                  return (
+                    <div key={idx} className="p-4 border rounded-lg bg-zinc-50 relative group">
+                      <button 
+                        onClick={() => handleRemoveItem(idx)}
+                        className="absolute top-2 right-2 p-1 text-zinc-400 hover:text-red-600 rounded-md"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      
+                      <div className="grid gap-4">
+                        <div className="grid gap-2">
+                          <Label>Pilih Obat</Label>
+                          <Select 
+                            value={item.medicineId} 
+                            onValueChange={(val) => handleItemChange(idx, "medicineId", val || "")}
+                          >
+                            <SelectTrigger className="w-full bg-white">
+                              <SelectValue placeholder="Pilih obat dari database">
+                                {selectedMed ? `${selectedMed.name} (${selectedMed.category})` : undefined}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {allMedicines.map(med => (
+                                <SelectItem key={med.id} value={med.id}>
+                                  {med.name} ({med.category})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       
                       <div className="flex gap-4">
                         <div className="w-1/3 grid gap-2">
@@ -226,8 +230,8 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
                       </div>
                     </div>
                   </div>
-                ))
-              )}
+                );
+              }))}
 
               {/* Peringatan Interaksi Obat */}
               {interactions.length > 0 && (

@@ -83,9 +83,18 @@ export function useAuth(): UseAuthReturn {
   }, [fetchUserProfile]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSupabaseUser(null);
+    setIsLoading(true);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSupabaseUser(null);
+      window.location.href = "/login";
+    } catch (err) {
+      console.error("SignOut error:", err);
+      window.location.href = "/login";
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   return { user, supabaseUser, isLoading, error, signOut };

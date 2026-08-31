@@ -74,15 +74,35 @@ export default function RealtimeInventoryPage() {
     return Array.from(uniqueBranches).sort();
   }, [groupedInventory]);
 
+  // Label mapping untuk dropdown filter
+  const categoryLabels: Record<string, string> = {
+    ALL: "Semua Kategori",
+    OTC: "Obat Bebas (OTC)",
+    PRESCRIPTION: "Obat Resep",
+  };
+
   // Filter data berdasarkan input user
   const filteredInventory = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return groupedInventory.filter((item) => {
-      const matchSearch = item.medicine.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchCategory = categoryFilter === "ALL" || item.medicine.category === categoryFilter;
-      
+      const matchSearch =
+        !q ||
+        item.medicine.name.toLowerCase().includes(q) ||
+        item.medicine.category.toLowerCase().includes(q) ||
+        (item.medicine.dosageForm && item.medicine.dosageForm.toLowerCase().includes(q)) ||
+        item.stockAcrossBranches.some(
+          (b) =>
+            b.pharmacyName.toLowerCase().includes(q) ||
+            b.pharmacyAddress.toLowerCase().includes(q)
+        );
+
+      const matchCategory =
+        categoryFilter === "ALL" || item.medicine.category === categoryFilter;
+
       // Jika branch spesifik dipilih, pastikan obat ini ada di branch tersebut
-      const matchBranch = branchFilter === "ALL" || 
-        item.stockAcrossBranches.some(b => b.pharmacyName === branchFilter);
+      const matchBranch =
+        branchFilter === "ALL" ||
+        item.stockAcrossBranches.some((b) => b.pharmacyName === branchFilter);
 
       return matchSearch && matchCategory && matchBranch;
     });
@@ -97,7 +117,7 @@ export default function RealtimeInventoryPage() {
         </div>
         <Skeleton className="h-[120px] w-full rounded-lg" />
         <div className="space-y-4 mt-8">
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3].map((i) => (
             <div key={i} className="space-y-3">
               <Skeleton className="h-8 w-48" />
               <Skeleton className="h-24 w-full rounded-lg" />
@@ -137,19 +157,21 @@ export default function RealtimeInventoryPage() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
             <Input
               id="search"
-              placeholder="Contoh: Paracetamol, Metformin..."
-              className="pl-9"
+              placeholder="Cari nama obat, kategori, bentuk sediaan, atau cabang..."
+              className="pl-9 bg-white"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
-        
+
         <div className="space-y-2 md:col-span-3">
           <Label>Kategori</Label>
           <Select value={categoryFilter} onValueChange={(val) => setCategoryFilter(val || "ALL")}>
-            <SelectTrigger>
-              <SelectValue placeholder="Semua Kategori" />
+            <SelectTrigger className="w-full bg-white">
+              <SelectValue placeholder="Semua Kategori">
+                {categoryLabels[categoryFilter] || categoryFilter}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Semua Kategori</SelectItem>
@@ -162,13 +184,17 @@ export default function RealtimeInventoryPage() {
         <div className="space-y-2 md:col-span-3">
           <Label>Cabang Apotek</Label>
           <Select value={branchFilter} onValueChange={(val) => setBranchFilter(val || "ALL")}>
-            <SelectTrigger>
-              <SelectValue placeholder="Semua Cabang" />
+            <SelectTrigger className="w-full bg-white">
+              <SelectValue placeholder="Semua Cabang">
+                {branchFilter === "ALL" ? "Semua Cabang" : branchFilter.replace("Apotek Alpro ", "")}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Semua Cabang</SelectItem>
-              {branches.map(branch => (
-                <SelectItem key={branch} value={branch}>{branch.replace('Apotek Alpro ', '')}</SelectItem>
+              {branches.map((branch) => (
+                <SelectItem key={branch} value={branch}>
+                  {branch.replace("Apotek Alpro ", "")}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
