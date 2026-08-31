@@ -12,7 +12,7 @@ import { Loader2, Plus, FileText, Calendar, AlertCircle, Inbox } from "lucide-re
 
 export default function PatientPrescriptionsPage() {
   const { user } = useAuth();
-  const { prescriptions, isLoading, error } = usePrescriptions(user?.id);
+  const { prescriptions, isLoading, error } = usePrescriptions({ userId: user?.id });
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   if (isLoading) {
@@ -58,11 +58,9 @@ export default function PatientPrescriptionsPage() {
         </div>
         
         <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700">
-              <Plus className="mr-2 h-4 w-4" />
-              Unggah Resep Baru
-            </Button>
+          <DialogTrigger render={<Button className="bg-green-600 hover:bg-green-700" />}>
+            <Plus className="mr-2 h-4 w-4" />
+            Unggah Resep Baru
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>

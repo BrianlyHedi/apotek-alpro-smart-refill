@@ -80,8 +80,8 @@ export default async function PharmacistDashboardPage() {
           <CardContent>
             <div className="text-3xl font-bold text-zinc-900">{pendingPrescriptions}</div>
             <p className="text-xs text-zinc-500 mt-1">Butuh tindakan segera</p>
-            <Button asChild variant="link" className="px-0 mt-2 text-green-600 h-auto">
-              <Link href="/pharmacist/prescriptions">Lihat antrean →</Link>
+            <Button render={<Link href="/pharmacist/prescriptions" />} nativeButton={false} variant="link" className="px-0 mt-2 text-green-600 h-auto">
+              Lihat antrean →
             </Button>
           </CardContent>
         </Card>
@@ -109,8 +109,8 @@ export default async function PharmacistDashboardPage() {
           <CardContent>
             <div className="text-3xl font-bold text-zinc-900">{lowStockItems}</div>
             <p className="text-xs text-zinc-500 mt-1">SKU yang perlu direstock</p>
-            <Button asChild variant="link" className="px-0 mt-2 text-green-600 h-auto">
-              <Link href="/pharmacist/inventory">Manajemen Stok →</Link>
+            <Button render={<Link href="/pharmacist/inventory" />} nativeButton={false} variant="link" className="px-0 mt-2 text-green-600 h-auto">
+              Manajemen Stok →
             </Button>
           </CardContent>
         </Card>

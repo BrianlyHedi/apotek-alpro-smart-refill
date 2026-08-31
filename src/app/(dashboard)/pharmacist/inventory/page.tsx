@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Plus, Minus, Save, X } from "lucide-react";
 import { useToast } from "@/components/providers/toast-provider";
-import { getStockStatus } from "@/lib/utils/stock-status";
+import { getStockStatus, getStockLabel } from "@/lib/utils/stock-status";
 import { supabase } from "@/lib/supabase/client";
 
 // Kita tidak memakai useInventory hook di sini karena hook itu me-merge stok lintas cabang (untuk view Pasien).
@@ -214,11 +214,11 @@ export default function PharmacistInventoryPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={
-                            stockStatus.status === "IN_STOCK" ? "bg-green-100 text-green-800 border-green-200" :
-                            stockStatus.status === "LOW_STOCK" ? "bg-amber-100 text-amber-800 border-amber-200" :
+                            stockStatus === "IN_STOCK" ? "bg-green-100 text-green-800 border-green-200" :
+                            stockStatus === "LOW_STOCK" ? "bg-amber-100 text-amber-800 border-amber-200" :
                             "bg-red-100 text-red-800 border-red-200"
                           }>
-                            {stockStatus.label}
+                            {getStockLabel(stockStatus)}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">

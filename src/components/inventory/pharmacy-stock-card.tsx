@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { StockBadge } from "./stock-badge";
-import { getStockStatus } from "@/lib/utils/stock-status";
+import { getStockStatus, getStockLabel } from "@/lib/utils/stock-status";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { MapPin } from "lucide-react";
 
@@ -61,8 +61,8 @@ export function PharmacyStockCard({
               </p>
             </div>
             <StockBadge 
-              status={stockStatus.status} 
-              label={stockStatus.label} 
+              status={stockStatus} 
+              label={getStockLabel(stockStatus)} 
               pulse={isUpdated} 
             />
           </div>

@@ -15,9 +15,10 @@ const verifySchema = z.object({
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: prescriptionId } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -36,7 +37,6 @@ export async function POST(
 
     const body = await request.json();
     const validatedData = verifySchema.parse(body);
-    const prescriptionId = params.id;
 
     // Transaksi Prisma: Update status resep, hapus item lama (jika ada), insert item baru
     const result = await prisma.$transaction(async (tx) => {
@@ -74,7 +74,7 @@ export async function POST(
   } catch (error) {
     console.error("[VERIFY_PRESCRIPTION]", error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid data", details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: "Invalid data", details: error.issues }, { status: 400 });
     }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

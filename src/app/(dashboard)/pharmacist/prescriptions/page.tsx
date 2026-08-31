@@ -21,10 +21,10 @@ export default async function PharmacistPrescriptionsPage() {
       where: { status: "PENDING" },
       include: {
         items: true,
-        user: { select: { name: true, email: true } }
+        patient: { select: { name: true, email: true } }
       },
       orderBy: { createdAt: "asc" }
-    }) as unknown as Promise<(PrescriptionWithItems & { user: { name: string, email: string } })[]>,
+    }) as unknown as Promise<(PrescriptionWithItems & { patient: { name: string, email: string } })[]>,
     
     // Ambil semua obat untuk dropdown
     prisma.medicine.findMany({
@@ -32,7 +32,18 @@ export default async function PharmacistPrescriptionsPage() {
     }),
 
     // Ambil semua interaksi untuk dicek
-    prisma.drugInteraction.findMany()
+    prisma.drugInteraction.findMany({
+      include: { medicineA: true, medicineB: true }
+    }).then((list) =>
+      list.map((item) => ({
+        medicineAId: item.medicineAId,
+        medicineAName: item.medicineA.name,
+        medicineBId: item.medicineBId,
+        medicineBName: item.medicineB.name,
+        severity: item.severity,
+        description: item.description,
+      }))
+    )
   ]);
 
   return (
@@ -70,8 +81,8 @@ export default async function PharmacistPrescriptionsPage() {
                   <div>
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <h3 className="font-semibold text-zinc-900">{prescription.user.name}</h3>
-                        <p className="text-sm text-zinc-500">{prescription.user.email}</p>
+                        <h3 className="font-semibold text-zinc-900">{prescription.patient?.name}</h3>
+                        <p className="text-sm text-zinc-500">{prescription.patient?.email}</p>
                       </div>
                       <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200">
                         PENDING

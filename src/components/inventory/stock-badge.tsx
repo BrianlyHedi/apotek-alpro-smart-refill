@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { StockStatus } from "@/lib/utils/stock-status";
+import type { StockStatus } from "@/lib/utils/stock-status";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +22,7 @@ export function StockBadge({ status, label, className, pulse = false }: StockBad
     }
   }, [pulse]);
 
-  const variants = {
+  const variants: Record<StockStatus, string> = {
     IN_STOCK: "bg-green-100 text-green-800 border-green-200",
     LOW_STOCK: "bg-amber-100 text-amber-800 border-amber-200",
     OUT_OF_STOCK: "bg-red-100 text-red-800 border-red-200",

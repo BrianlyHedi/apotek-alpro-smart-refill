@@ -1,4 +1,5 @@
 import type { StockStatus } from "@/types/inventory";
+export type { StockStatus };
 
 /// Tentukan status stok berdasarkan quantity dan minStock threshold
 export function getStockStatus(quantity: number, minStock: number): StockStatus {

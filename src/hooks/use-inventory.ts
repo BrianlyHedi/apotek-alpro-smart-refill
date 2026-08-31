@@ -18,6 +18,7 @@ interface UseInventoryReturn {
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  lastUpdatedMedicineId: string | null;
 }
 
 /// Hook untuk realtime inventory subscription — "wow factor" demo.
@@ -27,6 +28,7 @@ export function useInventory(
 ): UseInventoryReturn {
   const { pharmacyId, medicineId } = options;
   const [inventory, setInventory] = useState<InventoryWithDetails[]>([]);
+  const [lastUpdatedMedicineId, setLastUpdatedMedicineId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,8 +106,11 @@ export function useInventory(
           table: "inventory",
           ...(pharmacyId ? { filter: `pharmacy_id=eq.${pharmacyId}` } : {}),
         },
-        () => {
-          // Re-fetch semua data karena perlu JOIN dengan pharmacy dan medicine
+        (payload) => {
+          if (payload.new && (payload.new as any).medicine_id) {
+            setLastUpdatedMedicineId((payload.new as any).medicine_id);
+            setTimeout(() => setLastUpdatedMedicineId(null), 3000);
+          }
           fetchInventory();
         }
       )
@@ -116,5 +121,5 @@ export function useInventory(
     };
   }, [fetchInventory, pharmacyId]);
 
-  return { inventory, isLoading, error, refetch: fetchInventory };
+  return { inventory, isLoading, error, refetch: fetchInventory, lastUpdatedMedicineId };
 }

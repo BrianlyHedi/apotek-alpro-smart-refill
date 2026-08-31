@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Medicine } from "@prisma/client";
+import type { Medicine } from "@/generated/prisma";
 import { PrescriptionWithItems } from "@/types/prescription";
-import { checkDrugInteractions } from "@/lib/utils/drug-interaction-checker";
+import { checkDrugInteractions, type DrugInteractionResult } from "@/lib/utils/drug-interaction-checker";
 import { AlertTriangle, Plus, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/components/providers/toast-provider";
 import { useRouter } from "next/navigation";
@@ -21,8 +21,8 @@ import { useRouter } from "next/navigation";
 interface VerifyModalProps {
   prescription: PrescriptionWithItems;
   allMedicines: Medicine[];
-  allInteractions: any[]; // type DrugInteraction[]
-  children: React.ReactNode;
+  allInteractions: DrugInteractionResult[];
+  children: React.ReactElement;
 }
 
 export function VerifyPrescriptionModal({ prescription, allMedicines, allInteractions, children }: VerifyModalProps) {
@@ -30,7 +30,7 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
   const [items, setItems] = useState<{ medicineId: string; quantity: number; dosageInstruction: string }[]>([]);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [interactions, setInteractions] = useState<any[]>([]);
+  const [interactions, setInteractions] = useState<DrugInteractionResult[]>([]);
   const { addToast } = useToast();
   const router = useRouter();
 
@@ -39,7 +39,7 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
     if (isOpen) {
       if (prescription.items.length > 0) {
         setItems(prescription.items.map(i => ({
-          medicineId: i.medicineId,
+          medicineId: i.medicine?.id || (i as any).medicineId || "",
           quantity: i.quantity,
           dosageInstruction: i.dosageInstruction || ""
         })));
@@ -54,7 +54,7 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
   useEffect(() => {
     const medicineIds = items.map(i => i.medicineId).filter(Boolean);
     const foundInteractions = checkDrugInteractions(medicineIds, allInteractions);
-    setInteractions(foundInteractions);
+    setInteractions(foundInteractions.interactions);
   }, [items, allInteractions]);
 
   const handleAddItem = () => {
@@ -111,9 +111,7 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+      <DialogTrigger render={children} />
       <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="p-6 pb-2 shrink-0">
           <DialogTitle>Verifikasi Resep</DialogTitle>
@@ -227,7 +225,7 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
                     {interactions.map((interaction, i) => (
                       <li key={i} className="flex flex-col gap-1">
                         <div className="font-medium">
-                          {interaction.medicineA} & {interaction.medicineB} 
+                          {interaction.medicineAName} & {interaction.medicineBName} 
                           <span className="ml-2 text-xs bg-red-200 px-1.5 py-0.5 rounded font-bold">{interaction.severity}</span>
                         </div>
                         <div>{interaction.description}</div>

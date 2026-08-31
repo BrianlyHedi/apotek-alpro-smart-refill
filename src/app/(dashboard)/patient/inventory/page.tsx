@@ -12,9 +12,26 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Search, Loader2, SignalHigh } from "lucide-react";
+import { Search, SignalHigh } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+
+interface MedicineGroup {
+  medicine: {
+    id: string;
+    name: string;
+    category: string;
+    price: number;
+    dosageForm: string;
+  };
+  stockAcrossBranches: {
+    pharmacyId: string;
+    pharmacyName: string;
+    pharmacyAddress: string;
+    quantity: number;
+    minStock: number;
+  }[];
+}
 
 export default function RealtimeInventoryPage() {
   const { inventory, isLoading, error, lastUpdatedMedicineId } = useInventory();
@@ -23,20 +40,43 @@ export default function RealtimeInventoryPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [branchFilter, setBranchFilter] = useState<string>("ALL");
 
+  // Grouping inventory berdasarkan obat
+  const groupedInventory = useMemo(() => {
+    const map = new Map<string, MedicineGroup>();
+    for (const item of inventory) {
+      let group = map.get(item.medicine.id);
+      if (!group) {
+        group = {
+          medicine: item.medicine,
+          stockAcrossBranches: [],
+        };
+        map.set(item.medicine.id, group);
+      }
+      group.stockAcrossBranches.push({
+        pharmacyId: item.pharmacy.id,
+        pharmacyName: item.pharmacy.name,
+        pharmacyAddress: item.pharmacy.address,
+        quantity: item.quantity,
+        minStock: item.minStock,
+      });
+    }
+    return Array.from(map.values());
+  }, [inventory]);
+
   // Ekstrak daftar cabang unik untuk dropdown filter
   const branches = useMemo(() => {
     const uniqueBranches = new Set<string>();
-    inventory.forEach(item => {
+    groupedInventory.forEach(item => {
       item.stockAcrossBranches.forEach(branch => {
         uniqueBranches.add(branch.pharmacyName);
       });
     });
     return Array.from(uniqueBranches).sort();
-  }, [inventory]);
+  }, [groupedInventory]);
 
   // Filter data berdasarkan input user
   const filteredInventory = useMemo(() => {
-    return inventory.filter((item) => {
+    return groupedInventory.filter((item) => {
       const matchSearch = item.medicine.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchCategory = categoryFilter === "ALL" || item.medicine.category === categoryFilter;
       
@@ -46,7 +86,7 @@ export default function RealtimeInventoryPage() {
 
       return matchSearch && matchCategory && matchBranch;
     });
-  }, [inventory, searchQuery, categoryFilter, branchFilter]);
+  }, [groupedInventory, searchQuery, categoryFilter, branchFilter]);
 
   if (isLoading) {
     return (
@@ -107,7 +147,7 @@ export default function RealtimeInventoryPage() {
         
         <div className="space-y-2 md:col-span-3">
           <Label>Kategori</Label>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <Select value={categoryFilter} onValueChange={(val) => setCategoryFilter(val || "ALL")}>
             <SelectTrigger>
               <SelectValue placeholder="Semua Kategori" />
             </SelectTrigger>
@@ -121,7 +161,7 @@ export default function RealtimeInventoryPage() {
 
         <div className="space-y-2 md:col-span-3">
           <Label>Cabang Apotek</Label>
-          <Select value={branchFilter} onValueChange={setBranchFilter}>
+          <Select value={branchFilter} onValueChange={(val) => setBranchFilter(val || "ALL")}>
             <SelectTrigger>
               <SelectValue placeholder="Semua Cabang" />
             </SelectTrigger>

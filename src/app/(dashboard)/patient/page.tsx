@@ -56,11 +56,9 @@ export default async function PatientDashboardPage() {
           </p>
         </div>
         <div className="flex gap-2 mt-4 sm:mt-0">
-          <Button asChild className="bg-green-600 hover:bg-green-700">
-            <Link href="/patient/prescriptions">
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Resep
-            </Link>
+          <Button render={<Link href="/patient/prescriptions" />} nativeButton={false} className="bg-green-600 hover:bg-green-700">
+            <Upload className="mr-2 h-4 w-4" />
+            Upload Resep
           </Button>
         </div>
       </div>
@@ -72,23 +70,17 @@ export default async function PatientDashboardPage() {
             <CardTitle className="text-lg">Akses Cepat</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <Button variant="outline" className="justify-start h-12" asChild>
-              <Link href="/patient/inventory">
-                <PackageSearch className="mr-3 h-5 w-5 text-green-600" />
-                Cek Stok Obat Cabang
-              </Link>
+            <Button variant="outline" className="justify-start h-12" render={<Link href="/patient/inventory" />} nativeButton={false}>
+              <PackageSearch className="mr-3 h-5 w-5 text-green-600" />
+              Cek Stok Obat Cabang
             </Button>
-            <Button variant="outline" className="justify-start h-12" asChild>
-              <Link href="/patient/prescriptions">
-                <Pill className="mr-3 h-5 w-5 text-green-600" />
-                Resep Aktif Saya
-              </Link>
+            <Button variant="outline" className="justify-start h-12" render={<Link href="/patient/prescriptions" />} nativeButton={false}>
+              <Pill className="mr-3 h-5 w-5 text-green-600" />
+              Resep Aktif Saya
             </Button>
-            <Button variant="outline" className="justify-start h-12" asChild>
-              <Link href="/patient/orders">
-                <Clock className="mr-3 h-5 w-5 text-green-600" />
-                Lacak Pesanan
-              </Link>
+            <Button variant="outline" className="justify-start h-12" render={<Link href="/patient/orders" />} nativeButton={false}>
+              <Clock className="mr-3 h-5 w-5 text-green-600" />
+              Lacak Pesanan
             </Button>
           </CardContent>
         </Card>

@@ -9,9 +9,10 @@ const updateStockSchema = z.object({
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: inventoryId } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -29,7 +30,6 @@ export async function PATCH(
 
     const body = await request.json();
     const validatedData = updateStockSchema.parse(body);
-    const inventoryId = params.id;
 
     // Pastikan inventory ini milik cabang apoteker yang bersangkutan (jika role PHARMACIST)
     if (profile.role === "PHARMACIST") {
@@ -51,7 +51,7 @@ export async function PATCH(
   } catch (error) {
     console.error("[UPDATE_INVENTORY]", error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid data", details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: "Invalid data", details: error.issues }, { status: 400 });
     }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
