@@ -7,20 +7,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Medicine } from "@/generated/prisma";
 import { PrescriptionWithItems } from "@/types/prescription";
 import { checkDrugInteractions, type DrugInteractionResult } from "@/lib/utils/drug-interaction-checker";
 import { AlertTriangle, Plus, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/components/providers/toast-provider";
 import { useRouter } from "next/navigation";
 
-// Asumsikan data interactions sudah diload (di demo ini kita fetch via API, tapi untuk simplisitas kita hardcode atau fetch terpisah. 
-// Untuk saat ini, fungsi checkDrugInteractions menerima semua obat di keranjang dan data database)
-// Dalam konteks client, kita butuh fetch all interactions. Kita akan pass medicines dan interactions sebagai props.
+export interface SimpleMedicine {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  activeIngredients?: string;
+  dosageForm?: string;
+  manufacturer?: string;
+}
 
 interface VerifyModalProps {
   prescription: PrescriptionWithItems;
-  allMedicines: Medicine[];
+  allMedicines: SimpleMedicine[];
   allInteractions: DrugInteractionResult[];
   children: React.ReactElement;
 }
@@ -37,7 +42,7 @@ export function VerifyPrescriptionModal({ prescription, allMedicines, allInterac
   // Load existing items if any
   useEffect(() => {
     if (isOpen) {
-      if (prescription.items.length > 0) {
+      if (prescription.items && prescription.items.length > 0) {
         setItems(prescription.items.map(i => ({
           medicineId: i.medicine?.id || (i as any).medicineId || "",
           quantity: i.quantity,

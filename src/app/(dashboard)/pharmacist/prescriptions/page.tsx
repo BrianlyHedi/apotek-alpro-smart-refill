@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VerifyPrescriptionModal } from "@/components/pharmacist/verify-prescription-modal";
@@ -20,16 +20,34 @@ export default async function PharmacistPrescriptionsPage() {
     prisma.prescription.findMany({
       where: { status: "PENDING" },
       include: {
-        items: true,
+        items: {
+          include: { medicine: true }
+        },
         patient: { select: { name: true, email: true } }
       },
       orderBy: { createdAt: "asc" }
-    }) as unknown as Promise<(PrescriptionWithItems & { patient: { name: string, email: string } })[]>,
+    }).then((list) =>
+      list.map((prescription) => ({
+        ...prescription,
+        items: prescription.items.map((item) => ({
+          ...item,
+          medicine: {
+            ...item.medicine,
+            price: Number(item.medicine.price)
+          }
+        }))
+      }))
+    ) as unknown as Promise<(PrescriptionWithItems & { patient: { name: string, email: string } })[]>,
     
     // Ambil semua obat untuk dropdown
     prisma.medicine.findMany({
       orderBy: { name: "asc" }
-    }),
+    }).then((list) =>
+      list.map((m) => ({
+        ...m,
+        price: Number(m.price)
+      }))
+    ),
 
     // Ambil semua interaksi untuk dicek
     prisma.drugInteraction.findMany({
