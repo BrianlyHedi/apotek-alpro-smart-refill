@@ -65,6 +65,32 @@ export async function POST(
             dosageInstruction: item.dosageInstruction
           }))
         });
+
+        // 3. Otomatis buat/aktifkan Jadwal Refill Rutin untuk pasien
+        const now = new Date();
+        const nextDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+        for (const item of validatedData.items) {
+          await tx.refillSchedule.upsert({
+            where: {
+              userId_medicineId: {
+                userId: updatedPrescription.userId,
+                medicineId: item.medicineId,
+              },
+            },
+            create: {
+              userId: updatedPrescription.userId,
+              medicineId: item.medicineId,
+              frequencyDays: 30,
+              nextRefillDate: nextDate,
+              isActive: true,
+            },
+            update: {
+              isActive: true,
+              nextRefillDate: nextDate,
+            },
+          });
+        }
       }
 
       return updatedPrescription;

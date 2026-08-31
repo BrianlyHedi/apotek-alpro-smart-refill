@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { User, Mail, Shield, Phone, MapPin, Building2, Check } from "lucide-react";
 import type { User as PrismaUser } from "@/generated/prisma";
 import type { UserProfileWithPharmacy } from "@/lib/auth/get-user";
@@ -105,6 +107,19 @@ export function ProfileDialog({ isOpen, onOpenChange, user }: ProfileDialogProps
                   <p className="text-xs text-zinc-500 font-medium">Alamat</p>
                   <p className="font-medium text-zinc-900">{user.address}</p>
                 </div>
+              </div>
+            )}
+
+            {user.role === "PATIENT" && (
+              <div className="pt-2">
+                <Button
+                  render={<Link href="/patient/profile" />}
+                  nativeButton={false}
+                  onClick={() => onOpenChange(false)}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-semibold"
+                >
+                  Buka Profil & Pengaturan Akun
+                </Button>
               </div>
             )}
           </div>

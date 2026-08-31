@@ -12,8 +12,11 @@ const createPharmacySchema = z.object({
   longitude: z.number().optional().default(106.8456),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const medicineId = searchParams.get("medicineId");
+
     const pharmacies = await prisma.pharmacy.findMany({
       where: { deletedAt: null, isActive: true },
       orderBy: { name: "asc" },
@@ -23,10 +26,31 @@ export async function GET() {
         address: true,
         city: true,
         phone: true,
+        ...(medicineId
+          ? {
+              inventory: {
+                where: { medicineId },
+                select: { quantity: true, minStock: true },
+              },
+            }
+          : {}),
       },
     });
 
-    return NextResponse.json({ data: pharmacies });
+    const data = pharmacies.map((p) => {
+      const stockItem = (p as { inventory?: { quantity: number; minStock: number }[] }).inventory?.[0];
+      return {
+        id: p.id,
+        name: p.name,
+        address: p.address,
+        city: p.city,
+        phone: p.phone,
+        stock: stockItem !== undefined ? stockItem.quantity : null,
+        minStock: stockItem !== undefined ? stockItem.minStock : 10,
+      };
+    });
+
+    return NextResponse.json({ data });
   } catch (error) {
     console.error("[GET_PHARMACIES]", error);
     return NextResponse.json({ error: "Gagal memuat cabang apotek" }, { status: 500 });

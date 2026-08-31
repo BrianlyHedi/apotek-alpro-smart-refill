@@ -23,7 +23,7 @@ export default async function PharmacistPrescriptionsPage() {
         items: {
           include: { medicine: true }
         },
-        patient: { select: { name: true, email: true } }
+        patient: { select: { id: true, name: true, email: true, phone: true, address: true } }
       },
       orderBy: { createdAt: "asc" }
     }).then((list) =>
@@ -37,7 +37,7 @@ export default async function PharmacistPrescriptionsPage() {
           }
         }))
       }))
-    ) as unknown as Promise<(PrescriptionWithItems & { patient: { name: string, email: string } })[]>,
+    ) as unknown as Promise<PrescriptionWithItems[]>,
     
     // Ambil semua obat untuk dropdown (pilih field yang dibutuhkan saja)
     prisma.medicine.findMany({

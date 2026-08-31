@@ -26,6 +26,18 @@ export default async function AdminUsersPage() {
     }),
   ]);
 
+  const serializedUsers = users.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role as "PATIENT" | "PHARMACIST" | "ADMIN",
+    phone: u.phone,
+    address: u.address,
+    pharmacyId: u.pharmacyId,
+    createdAt: u.createdAt.toISOString(),
+    pharmacy: u.pharmacy,
+  }));
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div>
@@ -33,7 +45,7 @@ export default async function AdminUsersPage() {
         <p className="text-zinc-500">Kelola akun pasien, apoteker cabang, dan administrator.</p>
       </div>
 
-      <AdminUsersClient initialUsers={users} pharmacies={pharmacies} />
+      <AdminUsersClient initialUsers={serializedUsers} pharmacies={pharmacies} />
     </div>
   );
 }

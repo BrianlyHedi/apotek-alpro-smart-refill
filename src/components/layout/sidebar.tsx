@@ -8,7 +8,9 @@ import {
   Pill, 
   PackageSearch, 
   ShoppingCart,
-  Settings
+  Settings,
+  RefreshCw,
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatCSModal } from "@/components/layout/chat-cs-modal";
@@ -26,8 +28,10 @@ export function Sidebar({ role }: SidebarProps) {
     PATIENT: [
       { href: "/patient", icon: LayoutDashboard, label: "Dashboard" },
       { href: "/patient/prescriptions", icon: Pill, label: "Resep Saya" },
+      { href: "/patient/refills", icon: RefreshCw, label: "Jadwal Refill" },
       { href: "/patient/inventory", icon: PackageSearch, label: "Cek Stok Obat" },
       { href: "/patient/orders", icon: ShoppingCart, label: "Riwayat Pesanan" },
+      { href: "/patient/profile", icon: User, label: "Profil & Akun" },
     ],
     PHARMACIST: [
       { href: "/pharmacist", icon: LayoutDashboard, label: "Dashboard" },

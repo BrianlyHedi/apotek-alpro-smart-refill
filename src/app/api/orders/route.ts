@@ -114,6 +114,33 @@ export async function POST(request: Request) {
           where: { id: input.prescriptionId, userId: user.id, status: "VERIFIED" },
         });
         if (!prescription) throw new Error("Resep tidak valid atau belum diverifikasi");
+
+        // Pastikan jadwal refill dibuat untuk obat-obat dalam resep
+        const now = new Date();
+        const nextDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        for (const item of input.items) {
+          await tx.refillSchedule.upsert({
+            where: {
+              userId_medicineId: {
+                userId: user.id,
+                medicineId: item.medicineId,
+              },
+            },
+            create: {
+              userId: user.id,
+              medicineId: item.medicineId,
+              frequencyDays: 30,
+              nextRefillDate: nextDate,
+              lastRefillDate: now,
+              isActive: true,
+            },
+            update: {
+              isActive: true,
+              lastRefillDate: now,
+              nextRefillDate: nextDate,
+            },
+          });
+        }
       }
 
       return tx.order.create({

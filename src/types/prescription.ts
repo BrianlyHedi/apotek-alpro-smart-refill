@@ -11,9 +11,11 @@ export interface PrescriptionWithItems {
   createdAt: Date;
   updatedAt: Date;
   patient: {
-    id: string;
+    id?: string;
     name: string;
     email: string;
+    phone?: string | null;
+    address?: string | null;
   };
   verifiedBy: {
     id: string;
