@@ -49,14 +49,12 @@ export function Navbar({ user }: NavbarProps) {
 
       {/* User Dropdown */}
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-            <Avatar className="h-9 w-9">
-              <AvatarFallback className="bg-green-100 text-green-700 font-medium">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </Button>
+        <DropdownMenuTrigger className="relative h-9 w-9 rounded-full flex items-center justify-center hover:bg-zinc-100 outline-none">
+          <Avatar className="h-9 w-9">
+            <AvatarFallback className="bg-green-100 text-green-700 font-medium">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel className="font-normal">

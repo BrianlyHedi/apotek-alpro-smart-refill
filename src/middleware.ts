@@ -52,12 +52,13 @@ export async function middleware(request: NextRequest) {
   if (PUBLIC_ROUTES.includes(pathname)) {
     // Jika sudah login, redirect ke dashboard sesuai role
     if (user) {
-      const { data: profile } = await supabase
+      console.log("[Middleware] User logged in:", user.email);
+      const { data: profile, error } = await supabase
         .from("users")
         .select("role")
         .eq("id", user.id)
         .single();
-
+      console.log("[Middleware] Profile fetch result:", { profile, error });
       if (profile?.role) {
         const dashboard = ROLE_DASHBOARD[profile.role] ?? "/patient";
         return NextResponse.redirect(new URL(dashboard, request.url));
