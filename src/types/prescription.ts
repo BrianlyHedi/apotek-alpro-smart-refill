@@ -19,6 +19,10 @@ export interface PrescriptionWithItems {
     id: string;
     name: string;
   } | null;
+  orders?: {
+    id: string;
+    status: string;
+  }[];
   items: PrescriptionItemDetail[];
 }
 

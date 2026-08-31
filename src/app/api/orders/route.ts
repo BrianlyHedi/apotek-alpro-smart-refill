@@ -5,9 +5,9 @@ import { z } from "zod";
 
 const orderSchema = z.object({
   pharmacyId: z.string().uuid(),
-  deliveryAddress: z.string().max(500).optional(),
-  notes: z.string().max(500).optional(),
-  prescriptionId: z.string().uuid().optional(),
+  deliveryAddress: z.string().max(500).nullish(),
+  notes: z.string().max(500).nullish(),
+  prescriptionId: z.string().uuid().nullish(),
   items: z.array(z.object({
     medicineId: z.string().uuid(),
     quantity: z.number().int().positive(),
@@ -33,8 +33,15 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const parsed = orderSchema.safeParse(await request.json());
-    if (!parsed.success) return NextResponse.json({ error: "Invalid data", details: parsed.error.issues }, { status: 400 });
+    const rawBody = await request.json();
+    const parsed = orderSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      console.error("[ORDER_VALIDATION_ERROR]", parsed.error.issues);
+      return NextResponse.json({ 
+        error: "Data pesanan tidak valid: " + parsed.error.issues.map(i => i.message).join(", "),
+        details: parsed.error.issues 
+      }, { status: 400 });
+    }
     const input = parsed.data;
 
     const order = await prisma.$transaction(async (tx) => {
@@ -57,7 +64,7 @@ export async function POST(request: Request) {
           include: { medicine: true },
         });
         if (!inventory || inventory.quantity < requestedItem.quantity) {
-          throw new Error(`Stok ${requestedItem.medicineId} tidak mencukupi`);
+          throw new Error(`Stok ${inventory?.medicine?.name || requestedItem.medicineId} tidak mencukupi di cabang ini`);
         }
         const price = Number(inventory.medicine.price);
         totalAmount += price * requestedItem.quantity;
@@ -68,12 +75,44 @@ export async function POST(request: Request) {
         });
       }
 
+      // Validasi izin obat resep: lewat prescriptionId ATAU jadwal refill aktif
       if (needsPrescription && !input.prescriptionId) {
-        throw new Error("Obat resep membutuhkan resep yang sudah diverifikasi");
+        const activeRefills = await tx.refillSchedule.findMany({
+          where: {
+            userId: user.id,
+            medicineId: { in: input.items.map((i) => i.medicineId) },
+            isActive: true,
+          },
+        });
+
+        const activeRefillMedIds = new Set(activeRefills.map((r) => r.medicineId));
+        const unauthorizedRxItems = input.items.filter((item) => {
+          const med = medicineMap.get(item.medicineId);
+          return med?.requiresPrescription && !activeRefillMedIds.has(item.medicineId);
+        });
+
+        if (unauthorizedRxItems.length > 0) {
+          throw new Error("Obat resep membutuhkan resep dokter yang sudah diverifikasi atau jadwal refill aktif");
+        }
+
+        // Perbarui tanggal nextRefillDate pada jadwal refill
+        for (const refill of activeRefills) {
+          const now = new Date();
+          const nextDate = new Date(now.getTime() + refill.frequencyDays * 24 * 60 * 60 * 1000);
+          await tx.refillSchedule.update({
+            where: { id: refill.id },
+            data: {
+              lastRefillDate: now,
+              nextRefillDate: nextDate,
+            },
+          });
+        }
       }
 
       if (input.prescriptionId) {
-        const prescription = await tx.prescription.findFirst({ where: { id: input.prescriptionId, userId: user.id, status: "VERIFIED" } });
+        const prescription = await tx.prescription.findFirst({
+          where: { id: input.prescriptionId, userId: user.id, status: "VERIFIED" },
+        });
         if (!prescription) throw new Error("Resep tidak valid atau belum diverifikasi");
       }
 
@@ -81,9 +120,9 @@ export async function POST(request: Request) {
         data: {
           userId: user.id,
           pharmacyId: input.pharmacyId,
-          prescriptionId: input.prescriptionId,
-          deliveryAddress: input.deliveryAddress,
-          notes: input.notes,
+          prescriptionId: input.prescriptionId || null,
+          deliveryAddress: input.deliveryAddress || null,
+          notes: input.notes || null,
           totalAmount,
           items: { create: orderItems },
         },

@@ -40,7 +40,8 @@ export function usePrescriptions(
           prescription_items(
             id, quantity, dosage_instruction,
             medicines(id, name, category, dosage_form, manufacturer, price)
-          )
+          ),
+          orders(id, status)
         `
         )
         .order("created_at", { ascending: false });
@@ -55,6 +56,7 @@ export function usePrescriptions(
         (item: Record<string, unknown>) => {
           const patient = item.users as Record<string, unknown>;
           const items = item.prescription_items as Record<string, unknown>[];
+          const orders = (item.orders as Record<string, unknown>[]) || [];
 
           return {
             id: item.id as string,
@@ -73,6 +75,10 @@ export function usePrescriptions(
               email: patient.email as string,
             },
             verifiedBy: null,
+            orders: orders.map((o) => ({
+              id: o.id as string,
+              status: o.status as string,
+            })),
             items: items.map((rxItem) => {
               const medicine = rxItem.medicines as Record<string, unknown>;
               return {

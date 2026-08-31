@@ -18,7 +18,6 @@ export default async function PharmacistOrdersPage() {
   }
 
   const orders = await prisma.order.findMany({
-    where: { pharmacyId: profile.pharmacyId },
     include: {
       user: { select: { id: true, name: true, email: true, phone: true } },
       items: {

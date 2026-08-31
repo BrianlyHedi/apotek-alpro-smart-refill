@@ -23,12 +23,40 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const order = await prisma.order.findUnique({ where: { id }, select: { pharmacyId: true } });
-    if (!order || (profile.role === "PHARMACIST" && order.pharmacyId !== profile.pharmacyId)) {
+    const order = await prisma.order.findUnique({ 
+      where: { id }, 
+      select: { id: true, userId: true, items: true } 
+    });
+    if (!order) {
       return NextResponse.json({ error: "Order tidak ditemukan" }, { status: 404 });
     }
 
-    const updated = await prisma.order.update({ where: { id }, data: { status: body.status } });
+    const updated = await prisma.order.update({ 
+      where: { id }, 
+      data: { status: body.status },
+      include: { items: true }
+    });
+
+    // Jika pesanan selesai diserahkan ke pasien, update tanggal refill
+    if (body.status === "DELIVERED" && order.userId) {
+      for (const item of updated.items) {
+        const schedule = await prisma.refillSchedule.findFirst({
+          where: { userId: order.userId, medicineId: item.medicineId, isActive: true },
+        });
+        if (schedule) {
+          const now = new Date();
+          const nextDate = new Date(now.getTime() + schedule.frequencyDays * 24 * 60 * 60 * 1000);
+          await prisma.refillSchedule.update({
+            where: { id: schedule.id },
+            data: {
+              lastRefillDate: now,
+              nextRefillDate: nextDate,
+            },
+          });
+        }
+      }
+    }
+
     return NextResponse.json({ data: updated });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Status order tidak valid" }, { status: 400 });
