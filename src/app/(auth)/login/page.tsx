@@ -2,6 +2,8 @@ import { Metadata } from "next";
 import { LoginForm } from "@/components/forms/login-form";
 import { Suspense } from "react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Login | Apotek Alpro",
   description: "Masuk ke sistem Smart Prescription & Refill",

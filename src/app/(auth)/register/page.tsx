@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { RegisterForm } from "@/components/forms/register-form";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Daftar | Apotek Alpro",
   description: "Buat akun pasien Apotek Alpro",
